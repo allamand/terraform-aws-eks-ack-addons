@@ -953,7 +953,7 @@ module "iam" {
   namespace        = try(var.iam.namespace, local.iam_name)
   create_namespace = try(var.iam.create_namespace, true)
   chart            = "iam-chart"
-  chart_version    = try(var.iam.chart_version, "1.0.1")
+  chart_version    = try(var.iam.chart_version, "1.3.0")
   repository       = try(var.iam.repository, "oci://public.ecr.aws/aws-controllers-k8s")
   values           = try(var.iam.values, [])
 
