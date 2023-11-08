@@ -929,3 +929,101 @@ module "eventbridge" {
 
   tags = var.tags
 }
+
+################################################################################
+# IAM
+################################################################################
+
+locals {
+  iam_name = "ack-iam"
+}
+
+module "iam" {
+  source  = "aws-ia/eks-blueprints-addon/aws"
+  version = "1.1.1"
+
+  create = var.enable_iam
+
+  # Disable helm release
+  create_release = var.create_kubernetes_resources
+
+  # public.ecr.aws/aws-controllers-k8s/iam_name-chart:1.0.1
+  name             = try(var.iam.name, local.iam_name)
+  description      = try(var.iam.description, "Helm Chart for iam controller for ACK")
+  namespace        = try(var.iam.namespace, local.iam_name)
+  create_namespace = try(var.iam.create_namespace, true)
+  chart            = "iam-chart"
+  chart_version    = try(var.iam.chart_version, "1.0.1")
+  repository       = try(var.iam.repository, "oci://public.ecr.aws/aws-controllers-k8s")
+  values           = try(var.iam.values, [])
+
+  timeout                    = try(var.iam.timeout, null)
+  repository_key_file        = try(var.iam.repository_key_file, null)
+  repository_cert_file       = try(var.iam.repository_cert_file, null)
+  repository_ca_file         = try(var.iam.repository_ca_file, null)
+  repository_username        = try(var.iam.repository_username, local.repository_username)
+  repository_password        = try(var.iam.repository_password, local.repository_password)
+  devel                      = try(var.iam.devel, null)
+  verify                     = try(var.iam.verify, null)
+  keyring                    = try(var.iam.keyring, null)
+  disable_webhooks           = try(var.iam.disable_webhooks, null)
+  reuse_values               = try(var.iam.reuse_values, null)
+  reset_values               = try(var.iam.reset_values, null)
+  force_update               = try(var.iam.force_update, null)
+  recreate_pods              = try(var.iam.recreate_pods, null)
+  cleanup_on_fail            = try(var.iam.cleanup_on_fail, null)
+  max_history                = try(var.iam.max_history, null)
+  atomic                     = try(var.iam.atomic, null)
+  skip_crds                  = try(var.iam.skip_crds, null)
+  render_subchart_notes      = try(var.iam.render_subchart_notes, null)
+  disable_openapi_validation = try(var.iam.disable_openapi_validation, null)
+  wait                       = try(var.iam.wait, false)
+  wait_for_jobs              = try(var.iam.wait_for_jobs, null)
+  dependency_update          = try(var.iam.dependency_update, null)
+  replace                    = try(var.iam.replace, null)
+  lint                       = try(var.iam.lint, null)
+
+  postrender = try(var.iam.postrender, [])
+
+  set = concat([
+    {
+      # shortens pod name from `ack-iam-iam-chart-xxxxxxxxxxxxx` to `ack-iam-xxxxxxxxxxxxx`
+      name  = "nameOverride"
+      value = "ack-iam"
+    },
+    {
+      name  = "aws.region"
+      value = local.region
+    },
+    {
+      name  = "serviceAccount.name"
+      value = local.iam_name
+    }],
+    try(var.iam.set, [])
+  )
+  set_sensitive = try(var.iam.set_sensitive, [])
+
+
+  # IAM role for service account (IRSA)
+  set_irsa_names                = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
+  create_role                   = try(var.iam.create_role, true)
+  role_name                     = try(var.iam.role_name, "ack-iam")
+  role_name_use_prefix          = try(var.iam.role_name_use_prefix, true)
+  role_path                     = try(var.iam.role_path, "/")
+  role_permissions_boundary_arn = lookup(var.iam, "role_permissions_boundary_arn", null)
+  role_description              = try(var.iam.role_description, "IRSA for iam controller for ACK")
+  role_policies = lookup(var.iam, "role_policies", {
+    IAMFullAccess = "${local.iam_role_policy_prefix}/IAMFullAccess"
+  })
+  create_policy = try(var.iam.create_policy, false)
+
+  oidc_providers = {
+    this = {
+      provider_arn = local.oidc_provider_arn
+      # namespace is inherited from chart
+      service_account = local.iam_name
+    }
+  }
+
+  tags = var.tags
+}
