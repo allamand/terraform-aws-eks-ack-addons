@@ -58,12 +58,6 @@ output "gitops_metadata" {
       namespace       = try(var.iam.namespace, local.iam_name)
       service_account = local.iam_name
       } : "ack_iam_${k}" => v if var.enable_iam
-    },    
-    { for k, v in {
-      iam_role_arn    = module.eventbridge.iam_role_arn
-      namespace       = try(var.eventbridge.namespace, local.eventbridge_name)
-      service_account = local.eventbridge_name
-      } : "ack_eventbridge_${k}" => v if var.enable_eventbridge
     }
   )
 }
